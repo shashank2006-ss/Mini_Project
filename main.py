@@ -6,52 +6,61 @@ from config import apikey
 import datetime
 import random
 import numpy as np
+import requests
+
+
 
 
 chatStr = ""
-# https://youtu.be/Z3ZAJoi4x6Q
+
 def chat(query):
     global chatStr
-    print(chatStr)
-    openai.api_key = apikey
-    chatStr += f"Harry: {query}\n Jarvis: "
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt= chatStr,
-        temperature=0.7,
-        max_tokens=256,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
+
+    response = requests.post(
+        "http://localhost:11434/api/chat",
+        json={
+            "model": "llama3.2:3b",
+            "messages": [
+                {"role": "system", "content": "You are Jarvis, a helpful voice assistant."},
+                {"role": "user", "content": query}
+            ],
+            "stream": False
+        }
     )
-    # todo: Wrap this inside of a  try catch block
-    say(response["choices"][0]["text"])
-    chatStr += f"{response['choices'][0]['text']}\n"
-    return response["choices"][0]["text"]
+
+    answer = response.json()["message"]["content"]
+    print("Jarvis:", answer)
+    say(answer)
+    return answer
+
+
+
 
 
 def ai(prompt):
-    openai.api_key = apikey
-    text = f"OpenAI response for Prompt: {prompt} \n *************************\n\n"
-
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=prompt,
-        temperature=0.7,
-        max_tokens=256,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
+    response = requests.post(
+        "http://localhost:11434/api/chat",
+        json={
+            "model": "llama3.2:3b",
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False
+        }
     )
-    # todo: Wrap this inside of a  try catch block
-    # print(response["choices"][0]["text"])
-    text += response["choices"][0]["text"]
+
+    text = response.json()["message"]["content"]
+    print(text)
+    say(text)
+
     if not os.path.exists("Openai"):
         os.mkdir("Openai")
 
-    # with open(f"Openai/prompt- {random.randint(1, 2343434356)}", "w") as f:
-    with open(f"Openai/{''.join(prompt.split('intelligence')[1:]).strip() }.txt", "w") as f:
+    with open("Openai/response.txt", "w") as f:
         f.write(text)
+
+
+
+
+
 
 def say(text):
     os.system(f'say "{text}"')
